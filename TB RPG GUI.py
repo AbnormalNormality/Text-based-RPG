@@ -4,6 +4,9 @@ import random
 import ctypes
 import os
 ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 6)
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
+print(os.getcwd())
+print(os.listdir('.'))
 
 def readFile(file,x):
     try:
@@ -241,15 +244,17 @@ def secondPhase():
 def saveGameFile(fileLocation):
     global save, user, xp, xpRoof, levelCurve, level, HPValue, defense, eHPValue, eDefense, attackValue, magicValue, MPValue, eAttack, eStrongAttack
     variables = [user, xp, xpRoof, levelCurve, level, HPValue, defense, eHPValue, eDefense, attackValue, magicValue, MPValue, eAttack, eStrongAttack]
-    if not os.path.isfile(fileLocation):
-        tkprint(log,"Savefile not found","top")
-        tkprint(log,"Creating new savefile","top")
-        with open(fileLocation, 'x') as f:
-            f.write("")
-    if save == -1:
+    file_exists = os.path.isfile(fileLocation)
+    if not file_exists:
+        try:
+            tkprint(log,"Savefile not found","top")
+            tkprint(log,"Creating new savefile","top")
+        except:
+            pass
         if not os.path.isfile(fileLocation):
             with open(fileLocation, 'x') as f:
                 f.write("")
+    if save == -1:
         save = sum(1 for _ in open(fileLocation)) + 1
         with open(fileLocation, 'a') as f:
             f.writelines("\n")
