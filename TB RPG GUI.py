@@ -1,9 +1,9 @@
-from tkinter import Tk, Label, Button
+from tkinter import Tk, Label, Button, Toplevel
 from tkinter.ttk import *
 import random
 import ctypes
 import os
-ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 6)  # 6 corresponds to SW_MINIMIZE
+ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 6)
 
 def readFile(file,x):
     try:
@@ -13,21 +13,6 @@ def readFile(file,x):
         return x_line.strip()
     except:
         pass
-
-def saveGameFile(fileLocation):
-    if not os.path.isfile(fileLocation):
-        with open(fileLocation, 'w') as f:
-            f.write("")
-    save = sum(1 for _ in open(fileLocation)) + 1
-    with open(fileLocation, 'a') as f:
-        f.writelines("\n")
-        print("Balls")
-    with open(fileLocation, 'r') as f:
-        lines = f.readlines()
-    if 1 <= save <= len(lines):
-        lines[save - 1] = ','.join(map(str, variables)) + '\n'
-    with open(fileLocation, 'w') as f:
-        f.writelines(lines)
 
 def tkprint(window, yourText, side):
     label = Label(window, text=yourText)
@@ -39,17 +24,17 @@ def tkbutton(window, text, command, side, **kwargs):
     button.pack(side=side)
     return button
 
-def getName():
-    global name
-    names = ["Bob","Jim Scarey","Apples","Corban","Oscar","Charlie","Alia","Spencer","Avery","Sophie","Chris Snack"]
-    name = random.choice(names)
-    return name
+def getName(*extra):
+    names = ["Bob","Jim Scarey","Apples","Corban","Oscar","Charlie","Alia","Spencer","Avery","Sophie","Chris Snack","Mr. Peepee on your ear",""]
+    return random.choice(names)
 
-def getRace():
-    global race
-    races = ["Goblin", "Dragon", "Troll", "Mage", "Warrior", "Rogue", "Golem", "Peasant","Fangirl"]
-    race = random.choice(races)
-    return race
+def getRace(*extra):
+    races = ["Goblin", "Dragon", "Troll", "Mage", "Warrior", "Rogue", "Golem", "Peasant","Fangirl","Tree","Loser","Viking","God","Fruit snacks","Child","Opponent"]
+    adjectives = ["Viscious", "Playful", "Angry","Energetic","Empty","Smart","Depressed","Afraid"]
+    if extra:
+        return random.choice(races)
+    else:
+        return random.choice(adjectives)+" "+random.choice(races)
 
 def resetMain():
     main.title("New! Text-based RPG")
@@ -64,6 +49,10 @@ def deleteButtons(root):
     for widget in root.winfo_children():
         if isinstance(widget, Button):
             widget.destroy()
+
+def deleteAll(root):
+    for widget in root.winfo_children():
+        widget.destroy()
 
 def deleteLabels(root):
     for widget in root.winfo_children():
@@ -86,7 +75,18 @@ def attack():
         pass
 
 def item_click(item):
+    global MP
     print(f"Button clicked: {item}")
+    Label(log,text="You cast {}!".format(item)).pack(side="top")
+    if item == "Heal" and MP >= 6:
+        MP -= 8
+        healing_amount = round(HP * 0.3)
+        excess = (HP + healing_amount) % HPValue
+        HP += healing_amount - excess
+        tkprint(log,"You heal {}".format(healing_amount - excess),"top")
+    if item == "Fireball" and MP >= 0:
+        #effect
+        tkprint(log,"text","top")
     secondPhase()
 
 def scout(target):
@@ -98,13 +98,13 @@ def scout(target):
     mainPhase()
 
 def perform_action(action):
-    global text,canAction
+    global text,canAction,MP
     if canAction == True:
         text.destroy()
         deleteButtons(frame_bottom)
         Button(frame_bottom, text="Back", command=lambda: mainPhase()).pack(side="left")
         if action == "Magic":
-            text = Label(main, text="What ability do you want to use?")
+            text = Label(main, text="What ability do you want to use? ({})".format(MP))
             text.pack(side="bottom")
             [Button(frame_bottom, text=item, command=lambda i=item: item_click(i)).pack(side="left") for item in skills]
         elif action == "Scout":
@@ -118,6 +118,12 @@ def perform_action(action):
 def levelUp():
     global atkButton,magButton,sctButton,canContinue,level
     level += 1
+    if level >= 2:
+        skills.append("Heal")
+    if level >= 5:
+        skills.append("Fireball")
+    if level >= 8:
+        skills.append("Lightning")
     canContinue = False
     deleteButtons(frame_bottom)
     choice = None
@@ -149,12 +155,16 @@ def levelUp():
     defenseButton = tkbutton(frame_bottom,"Defense",lambda:raiseStat("defense"),"left")
 
 def mainPhase():
-    global text, level, values, eHP, xp, xpRoof, canAction, HPValue, eHPValue, HP, loop, winCheck
+    global text, level, values, eHP, xp, xpRoof, canAction, HPValue, eHPValue, HP, loop, winCheck, MPValue, MP, turn
     if not "loop" in globals() or loop == False:
+        turn = 0
         HP = HPValue
         eHP = eHPValue
+        MP = MPValue
         loop = True
         winCheck = False
+    else:
+        turn += 1
     canAction = True
     resetMain()
     level = int(level)
@@ -171,12 +181,6 @@ def mainPhase():
             storage = 0
             while xp >= xpRoof:
                 level += 1
-                if level >= 2:
-                    skills.append("Heal")
-                if level >= 5:
-                    skills.append("Fireball")
-                if level >= 8:
-                    skills.append("Lightning")
                 xp -= xpRoof
                 xpRoof = round(xpRoof * levelCurve)
                 tkprint(log,"Level up! (" + str(level) + ")","top")
@@ -204,29 +208,63 @@ def mainPhase():
     text = Label(main, text="What do you do?")
     text.pack(side="bottom")
 
+def addChance(list,item,chance):
+    x = chance
+    while x > 0:
+        list.append(item)
+        x -= 1
+
+enemyActions = []
+addChance(enemyActions,"weakAttack",50)
+addChance(enemyActions,"strongAttack",25)
+addChance(enemyActions,"special",0)
+addChance(enemyActions,"wait",25)
+
 def secondPhase():
-    global enemyChoice,HP,eAttack,eStrongAttack,attackChance,strongAttackChance,specialChance,waitChance
-    enemyChoice = random.randint(1, 100)
-    if enemyChoice <= attackChance:
-        # Weak attack
+    global enemyChoice,HP,eAttack,eStrongAttack,turn,enemyActions
+    turn += 1
+    enemyChoice = random.choice(enemyActions)
+    if enemyChoice == "weakAttack":
         damage = random.randint(round(eAttack - eAttack * 0.3), round(eAttack + eAttack * 0.3)) - round(defense / 2)
         HP -= damage
         tkprint(log, "{} does an attack (-{})".format(name, damage), "top")
-    if enemyChoice > attackChance and enemyChoice <= strongAttackChance:
-        # Strong attack
+    if enemyChoice == "strongAttack":
         damage = random.randint(round(eStrongAttack - eStrongAttack * 0.3),round(eStrongAttack + eStrongAttack * 0.3)) - round(defense / 2)
         HP -= damage
         tkprint(log,"{} does a strong attack (-{})".format(name,damage),"top")
-    if enemyChoice > strongAttackChance and enemyChoice <= specialChance:
-        # Special
+    if enemyChoice == "special":
         tkprint(log, "{} does nothing".format(name), "top")
-    if enemyChoice > specialChance:
-        # Wait
+    if enemyChoice == "wait":
+        pass
         tkprint(log, "{} does nothing".format(name), "top")
     mainPhase()
+def saveGameFile(fileLocation):
+    global save, user, xp, xpRoof, levelCurve, level, HPValue, defense, eHPValue, eDefense, attackValue, magicValue, MPValue, eAttack, eStrongAttack
+    variables = [user, xp, xpRoof, levelCurve, level, HPValue, defense, eHPValue, eDefense, attackValue, magicValue, MPValue, eAttack, eStrongAttack]
+    if not os.path.isfile(fileLocation):
+        tkprint(log,"Savefile not found","top")
+        tkprint(log,"Creating new savefile","top")
+        with open(fileLocation, 'x') as f:
+            f.write("")
+    if save == -1:
+        if not os.path.isfile(fileLocation):
+            with open(fileLocation, 'x') as f:
+                f.write("")
+        save = sum(1 for _ in open(fileLocation)) + 1
+        with open(fileLocation, 'a') as f:
+            f.writelines("\n")
+        save = sum(1 for _ in open(fileLocation))
+    with open(fileLocation, 'r') as f:
+        lines = f.readlines()
+    if 1 <= save <= len(lines):
+        lines[save - 1] = ','.join(map(str, variables)) + '\n'
+    with open(fileLocation, 'w') as f:
+        f.writelines(lines)
+    if "savebutton" in globals():
+        savebutton.destroy()
 
 def endCombat(result):
-    global cont, canAction, xp, xpRoof, levelCurve, level, HPValue, defense, eHP, eHPValue, eDefense, attackValue, magicValue, MPValue, eAttack, eStrongAttack, attackChance, strongAttackChance, specialChance, waitChance
+    global log_bottom, savebutton, save, file, cont, canAction, xp, xpRoof, levelCurve, level, HPValue, defense, eHP, eHPValue, eDefense, attackValue, magicValue, MPValue, eAttack, eStrongAttack, fileLocation
     if result == "win":
         tkprint(log,"You win!","top")
         eHPValue = round(eHPValue * 1.01,1)
@@ -251,11 +289,6 @@ def endCombat(result):
         magicValue = 3
         MPValue = 15
         eAttack = 3.5
-        eStrongAttack = 5.5
-        attackChance = 25
-        strongAttackChance = 50
-        specialChance = 75
-        waitChance = 100
     canAction = False
     try:
         log_bottom.destroy()
@@ -263,107 +296,87 @@ def endCombat(result):
         pass
     log_bottom = Frame(log)
     log_bottom.pack(side="top")
-    cont = tkbutton(log_bottom, "Save", saveGameFile, "left")
+    savebutton = tkbutton(log_bottom, "Save", lambda:saveGameFile(file), "left")
     cont = tkbutton(log_bottom,"Continue",newCombat,"left")
-
-gateVariable = False
-
-user = ""
-canDestroy = False
 
 saveCheck = Tk()
 saveCheck.title("Save Check")
 saveCheck.minsize(150, 190)
 saveCheck.geometry("150x190+50+50")
 
-frame_bottom = Frame(saveCheck)
-frame_bottom.pack(side="bottom")
-
-frame_top = Frame(saveCheck)
-
-def passCheck(*forcePass):
-    global gateVariable, user, hasSavefile,canDestroy
-    if forcePass:
-        saveCheck.destroy()
-    gateVariable = True
-    if hasSavefile == "no":
-        user = userInput.get()
-        saveCheck.destroy()
-
-def afterInput():
-    global user
-    if userInput.get() == "":
-        saveLocation = "savefile.txt"
-    else:
-        saveLocation = userInput.get()
-
-    def multisavefile(save):
-        try:
-            save = int(save)
-            if 0 <= save <= sum(1 for _ in open(saveLocation)):
-                saveSafe = True
-                if save == 0:
-                    save = int(readFile(r"extradata.txt", 0))
+def hasSavefile(result):
+    global file
+    frame_top.destroy()
+    label.destroy()
+    if result == True:
+        def finish():
+            global file
+            if not entry.get() == "":
+                file = entry.get()
             else:
-                saveSafe = False
-        except:
-            saveSafe = False
-        if saveSafe == True:
-            global user, xp, xpRoof, levelCurve, level, HPValue, defense, eHPValue, eDefense, attackValue, magicValue, MPValue, eAttack, eStrongAttack, attackChance, strongAttackChance, specialChance, waitChance
-            user, xp, xpRoof, levelCurve, level, HPValue, defense, eHPValue, eDefense, attackValue, magicValue, MPValue, eAttack, eStrongAttack, attackChance, strongAttackChance, specialChance, waitChance = readFile(
-                saveLocation, int(save) - 1).split(",")
-            xp, xpRoof, levelCurve, level, HPValue, defense, eHPValue, eDefense, attackValue, magicValue, MPValue, eAttack, eStrongAttack, attackChance, strongAttackChance, specialChance, waitChance = [
-                float(var) for var in (
-                xp, xpRoof, levelCurve, level, HPValue, defense, eHPValue, eDefense, attackValue, magicValue, MPValue, eAttack,
-                eStrongAttack, attackChance, strongAttackChance, specialChance, waitChance)]
-            passCheck("pass")
-    if sum(1 for _ in open(saveLocation)) > 1:
-        global multisave
-        if not "multisave" in globals():
-            label1 = Label(text="Multiple savefiles detected, which one do you want to use? Use file 0 for the most recent save ({})".format(
-                str(sum(1 for _ in open(saveLocation)))), wraplength=150)
-            label1.pack(side="top")
-            multiSave = Entry(saveCheck, width=15)
-            multiSave.pack(side="top")
-            finish.destroy()
-            button1 = Button(saveCheck, text="Load savefile", command=lambda: print(multiSave.get()) or multisavefile(multiSave.get()))
-            button1.pack(side="bottom")
+                file = "savefile.txt"
+            deleteAll(saveCheck)
+            save = 1
+            if not sum(1 for _ in open(file)) > 1:
+                user, xp, xpRoof, levelCurve, level, HPValue, defense, eHPValue, eDefense, attack, magic, MPValue, eAttack, eStrongAttack = readFile(file, save - 1).split(",")
+                xp, xpRoof, levelCurve, level, HPValue, defense, eHPValue, eDefense, attack, magic, MPValue, eAttack, eStrongAttack = [float(var) for var in (xp, xpRoof, levelCurve, level, HPValue, defense, eHPValue, eDefense, attack, magic, MPValue,eAttack, eStrongAttack)]
+                saveCheck.destroy()
+            else:
+                def savefile(number):
+                    global file, save, user, xp, xpRoof, levelCurve, level, HPValue, defense, eHPValue, eDefense, attackValue, magicValue, MPValue, eAttack, eStrongAttack
+                    save = int(number.split(" ")[0])
+                    saveCheck.destroy()
+                    user, xp, xpRoof, levelCurve, level, HPValue, defense, eHPValue, eDefense, attackValue, magicValue, MPValue, eAttack, eStrongAttack = readFile(file, save - 1).split(",")
+                    xp, xpRoof, levelCurve, level, HPValue, defense, eHPValue, eDefense, attackValue, magicValue, MPValue, eAttack, eStrongAttack = [float(var) for var in (xp, xpRoof, levelCurve, level, HPValue, defense, eHPValue, eDefense, attack, magic, MPValue, eAttack, eStrongAttack)]
+                Label(saveCheck,text="Multiple savefiles detected, which one do you want to use? Most recent: {}".format(readFile("extradata.txt",0)),wraplength=150).pack(side="top")
+                saves = []
+                x = 0
+                while len(saves) < sum(1 for _ in open(file)):
+                    saves.append("{} - {}".format((x + 1),readFile(file,x).split(",")[0]))
+                    x += 1
+                [Button(saveCheck, text=item, command=lambda i=item: savefile(i)).pack(side="top") for item in saves]
+        Label(saveCheck, text="Where is your savefile located? Leave blank for default", wraplength=150).pack(side="top")
+        entry = Entry(width=15)
+        entry.pack(side="top")
+        Button(saveCheck, text="Continue", command=finish).pack(side="top")
     else:
-        save = 1
-        user, xp, xpRoof, levelCurve, level, HPValue, defense, eHPValue, eDefense, attackValue, magicValue, MPValue, eAttack, eStrongAttack, attackChance, strongAttackChance, specialChance, waitChance = readFile(saveLocation, save - 1).split(",")
-        xp, xpRoof, levelCurve, level, HPValue, defense, eHPValue, eDefense, attackValue, magicValue, MPValue, eAttack, eStrongAttack, attackChance, strongAttackChance, specialChance, waitChance = [float(var) for var in (xp, xpRoof, levelCurve, level, HPValue, defense, eHPValue, eDefense, attackValue, magicValue, MPValue, eAttack,eStrongAttack, attackChance, strongAttackChance, specialChance, waitChance)]
-        passCheck("pass")
+        if result == False:
+            def finish():
+                global save, file, user,xp,xpRoof,levelCurve,level,HPValue,defense,eHPValue,eDefense,attackValue,magicValue,MPValue,eAttack,eStrongAttack
+                file = "savefile.txt"
+                save = -1
+                if not entry.get() == "":
+                    user = entry.get().replace(" ","_")
+                else:
+                    user = "Unnamed"
+                xp = 0
+                xpRoof = 90
+                levelCurve = 1.25
+                level = 0
+                HPValue = 20
+                defense = 0
+                eHPValue = 14
+                eDefense = 0
+                attackValue = 5
+                magicValue = 3
+                MPValue = 15
+                eAttack = 3.5
+                eStrongAttack = 5.5
+                file = "savefile.txt"
+                saveGameFile(file)
+                saveCheck.destroy()
+            Label(saveCheck, text="What name do you want for your savefile?", wraplength=150).pack(side="top")
+            entry = Entry(saveCheck, width=15)
+            entry.pack(side="top")
+            Button(saveCheck, text="Finish", command=finish).pack(side="top")
 
-def savefile(choice):
-    global userInput,hasSavefile
-    deleteButtons(frame_top)
-    textLabel.destroy()
-    if choice == "yes":
-        hasSavefile = "yes"
-        frame_top.destroy()
-        Label(saveCheck, text="Where is your savefile located?", wraplength=150).pack(side="top")
-        userInput = Entry(saveCheck, width=20)
-        userInput.pack(side="top")
-        enterFile = Button(saveCheck, text="Continue", command=afterInput)
-        enterFile.pack(side="top")
-    if choice == "no":
-        hasSavefile = "no"
-        frame_top.destroy()
-        Label(saveCheck,text="What name do you want for your savefile?",wraplength=150).pack(side="top")
-        userInput = Entry(saveCheck,width=20)
-        userInput.pack(side="top")
-
-textLabel = Label(saveCheck, text="Do you have a savefile?")
-textLabel.pack(side="top")
+label = Label(saveCheck, text="Do you have a savefile")
+label.pack(side="top")
+frame_top = Frame(saveCheck)
 frame_top.pack(side="top")
-Button(frame_top,text="Yes",command=lambda: savefile("yes")).pack(side="left")
-Button(frame_top,text="No",command=lambda: savefile("no")).pack(side="left")
-finish = Button(saveCheck,text="Finish",command=passCheck)
-finish.pack(side="bottom")
+Button(frame_top,text="Yes",command=lambda:hasSavefile(True)).pack(side="left")
+Button(frame_top,text="No",command=lambda:hasSavefile(False)).pack(side="left")
 saveCheck.mainloop()
-
-while not gateVariable:
-    pass
 
 main = Tk()
 main.title("New! Text-based RPG")
@@ -381,38 +394,16 @@ frame_bottom.pack(side="bottom")
 canContinue = True
 winCheck = False
 skills = []
-if hasSavefile == "no":
-    xp = 0
-    xpRoof = 90
-    levelCurve = 1.25
-    level = 0
-    HPValue = 20
-    HP = 20
-    defense = 0
-    eHPValue = 14
-    eDefense = 0
-    attackValue = 5
-    magicValue = 3
-    MPValue = 15
-    eAttack = 3.5
-    eStrongAttack = 5.5
-    attackChance = 25
-    strongAttackChance = 50
-    specialChance = 75
-    waitChance = 100
-    file = "savefile.txt"
-if hasSavefile == "yes":
-    pass
-
-variables = [user, xp, xpRoof, levelCurve, level, HPValue, defense, eHPValue, eDefense, attackValue, magicValue, MPValue, eAttack, eStrongAttack, attackChance, strongAttackChance, specialChance, waitChance]
+variables = [user, xp, xpRoof, levelCurve, level, HPValue, defense, eHPValue, eDefense, attackValue, magicValue, MPValue, eAttack, eStrongAttack]
 atkButton = tkbutton(frame_bottom, "Attack", lambda: attack(), "left")
 magButton = tkbutton(frame_bottom, "Magic", lambda: perform_action("Magic"), "left")
 sctButton = tkbutton(frame_bottom, "Scout", lambda: perform_action("Scout"), "left")
 def newCombat():
-    global eHP,loglabel,cont,loop,canContinue
+    global eHP,loglabel,cont,loop,canContinue,name,race
     if canContinue == True:
         loop = False
         name = getName()
+        race = getRace(1)
         eHP = eHPValue
         try:
             loglabel.destroy()
@@ -424,10 +415,9 @@ def newCombat():
             cont.destroy()
         except:
             pass
-        loglabel = tkprint(main, "{} the {} attacks you!".format(getName(), getRace()), "top")
+        loglabel = tkprint(main, "{} the {} attacks you!".format(name, race), "top")
         tkprint(log, "{} the {} attacks you!".format(name, race), "top")
         mainPhase()
 
 newCombat()
-
 main.mainloop()
