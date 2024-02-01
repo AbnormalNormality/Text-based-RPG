@@ -1,2 +1,3 @@
 Alia,32,100,2.05,0,100,0,14.7,1,5,3,15,3.7,5.8
-Guide to editing savedata, all you need to do is cchange the corresponding value: user,xp,xpRoof,levelCurve,level,HPValue,defense,eHPValue,eDefense,attack,magic,MPValue,eAttack,eStrongAttack
+Guide to editing savedata, all you need to do is change the corresponding value:
+user,xp,xpRoof,levelCurve,level,HPValue,defense,eHPValue,eDefense,attack,magic,MPValue,eAttack,eStrongAttack
